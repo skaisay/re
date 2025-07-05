@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaaS API Тестер</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 BaaS Platform API Тестер</h1>
+        <p>Тестирование API вашего Backend-as-a-Service сервера</p>
+
+        <!-- Настройки сервера -->
+        <div class="section">
+            <h2>⚙️ Настройки сервера</h2>
+            <div class="form-group">
+                <label for="serverUrl">URL сервера:</label>
+                <input type="url" id="serverUrl" value="https://587eaaeb-f5ac-4142-9484-90df2d2ce86b-00-cm78a6rbif8r.riker.replit.dev" placeholder="https://your-server.com">
+            </div>
+            <button onclick="checkServerStatus()">🔍 Проверить статус сервера</button>
+            <div id="serverStatus"></div>
+        </div>
+
+        <!-- Системные endpoint'ы -->
+        <div class="section">
+            <h2>🔧 Системные проверки</h2>
+            <button onclick="testHealth()">❤️ Health Check</button>
+            <button onclick="testApiDocs()">📚 API Documentation</button>
+            <div id="systemResponse"></div>
+        </div>
+
+        <!-- Telegram Bot -->
+        <div class="section">
+            <h2>🤖 Telegram Bot</h2>
+            <div class="form-group">
+                <label for="telegramToken">Telegram Bot Token:</label>
+                <input type="password" id="telegramToken" placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxyz">
+            </div>
+            <div class="form-group">
+                <label for="chatId">Chat ID для тестового сообщения:</label>
+                <input type="text" id="chatId" placeholder="123456789">
+            </div>
+            <div class="form-group">
+                <label for="testMessage">Тестовое сообщение:</label>
+                <input type="text" id="testMessage" value="🚀 Тест от API клиента! Сервер работает корректно.">
+            </div>
+            <button onclick="checkTelegramBot()">✅ Проверить бота</button>
+            <button onclick="sendTelegramTest()">📤 Отправить тест сообщение</button>
+            <div id="telegramResponse"></div>
+        </div>
+
+        <!-- Platform API -->
+        <div class="section">
+            <h2>🔐 Platform API (Требует авторизации)</h2>
+            <div class="form-group">
+                <label for="platformToken">Platform Token:</label>
+                <input type="password" id="platformToken" placeholder="Токен платформы">
+            </div>
+            <button onclick="testPlatformApps()">📱 Получить список приложений</button>
+            <button onclick="testPlatformLogs()">📊 Получить логи запросов</button>
+            <div id="platformResponse"></div>
+        </div>
+
+        <!-- Application API -->
+        <div class="section">
+            <h2>🔑 Application API</h2>
+            <div class="form-group">
+                <label for="apiKey">API Key приложения:</label>
+                <input type="password" id="apiKey" placeholder="app_xxxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label for="appId">App ID:</label>
+                <input type="text" id="appId" placeholder="app-uuid">
+            </div>
+            <button onclick="testAppHealth()">💚 Проверить приложение</button>
+            <div id="appResponse"></div>
+        </div>
+
+        <!-- Результаты -->
+        <div class="section">
+            <h2>📋 Лог всех запросов</h2>
+            <button onclick="clearLogs()">🗑️ Очистить лог</button>
+            <div id="requestLog"></div>
+        </div>
+    </div>
+
+    <script>
+        // Логирование запросов
+        let requestCounter = 0;
+        
+        function logRequest(method, url, headers, body, response, status) {
+            requestCounter++;
+            const timestamp = new Date().toLocaleString('ru-RU');
+            const log = document.getElementById('requestLog');
+            
+            const statusClass = status >= 200 && status < 300 ? 'success' : 'error';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `response ${statusClass}`;
+            logEntry.innerHTML = `
+<strong>#${requestCounter} [${timestamp}]</strong>
+${method} ${url}
+Status: ${status}
+
+Headers: ${JSON.stringify(headers, null, 2)}
+
+${body ? 'Request Body:\n' + JSON.stringify(body, null, 2) + '\n\n' : ''}Response:
+${JSON.stringify(response, null, 2)}
+            `;
+            
+            log.appendChild(logEntry);
+            logEntry.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearLogs() {
+            document.getElementById('requestLog').innerHTML = '';
+            requestCounter = 0;
+        }
+
+        // Базовая функция для API запросов
+        async function apiRequest(method, endpoint, headers = {}, body = null) {
+            const serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, '');
+            const url = serverUrl + endpoint;
+            
+            const config = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...headers
+                }
+            };
+            
+            if (body) {
+                config.body = JSON.stringify(body);
+            }
+
+            try {
+                const response = await fetch(url, config);
+                const data = await response.json();
+                
+                logRequest(method, url, headers, body, data, response.status);
+                
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                const errorResponse = { error: error.message };
+                logRequest(method, url, headers, body, errorResponse, 0);
+                return { success: false, data: errorResponse, status: 0 };
+            }
+        }
+
+        function showResponse(elementId, result) {
+            const element = document.getElementById(elementId);
+            const className = result.success ? 'success' : 'error';
+            element.innerHTML = `<div class="response ${className}">${JSON.stringify(result.data, null, 2)}</div>`;
+        }
+
+        // Проверка статуса сервера
+        async function checkServerStatus() {
+            const result = await apiRequest('GET', '/health');
+            showResponse('serverStatus', result);
+            
+            // Обновляем индикатор статуса
+            const statusDiv = document.getElementById('serverStatus');
+            if (result.success) {
+                statusDiv.innerHTML = `<span class="status online">🟢 ONLINE</span> ` + statusDiv.innerHTML;
+            } else {
+                statusDiv.innerHTML = `<span class="status offline">🔴 OFFLINE</span> ` + statusDiv.innerHTML;
+            }
+        }
+
+        // Системные проверки
+        async function testHealth() {
+            const result = await apiRequest('GET', '/health');
+            showResponse('systemResponse', result);
+        }
+
+        async function testApiDocs() {
+            const result = await apiRequest('GET', '/api');
+            showResponse('systemResponse', result);
+        }
+
+        // Telegram тесты
+        async function checkTelegramBot() {
+            const token = document.getElementById('telegramToken').value;
+            if (!token) {
+                showResponse('telegramResponse', { success: false, data: { error: 'Введите токен бота' } });
+                return;
+            }
+
+            const result = await apiRequest('POST', '/api/telegram/check', {}, { token });
+            showResponse('telegramResponse', result);
+        }
+
+        async function sendTelegramTest() {
+            const token = document.getElementById('telegramToken').value;
+            const chatId = document.getElementById('chatId').value;
+            const message = document.getElementById('testMessage').value;
+
+            if (!token || !chatId || !message) {
+                showResponse('telegramResponse', { success: false, data: { error: 'Заполните все поля' } });
+                return;
+            }
+
+            const result = await apiRequest('POST', '/api/telegram/test', {}, {
+                token,
+                chatId: parseInt(chatId),
+                message
+            });
+            showResponse('telegramResponse', result);
+        }
+
+        // Platform API тесты
+        async function testPlatformApps() {
+            const token = document.getElementById('platformToken').value;
+            if (!token) {
+                showResponse('platformResponse', { success: false, data: { error: 'Введите токен платформы' } });
+                return;
+            }
+
+            const result = await apiRequest('GET', '/api/platform/apps', {
+                'Authorization': `Bearer ${token}`
+            });
+            showResponse('platformResponse', result);
+        }
+
+        async function testPlatformLogs() {
+            const token = document.getElementById('platformToken').value;
+            if (!token) {
+                showResponse('platformResponse', { success: false, data: { error: 'Введите токен платформы' } });
+                return;
+            }
+
+            const result = await apiRequest('GET', '/api/platform/logs', {
+                'Authorization': `Bearer ${token}`
+            });
+            showResponse('platformResponse', result);
+        }
+
+        // Application API тесты
+        async function testAppHealth() {
+            const apiKey = document.getElementById('apiKey').value;
+            const appId = document.getElementById('appId').value;
+
+            if (!apiKey || !appId) {
+                showResponse('appResponse', { success: false, data: { error: 'Введите API ключ и App ID' } });
+                return;
+            }
+
+            const result = await apiRequest('GET', `/api/v1/${appId}/health`, {
+                'X-API-Key': apiKey
+            });
+            showResponse('appResponse', result);
+        }
+
+        // Автоматическая проверка при загрузке
+        window.onload = function() {
+            checkServerStatus();
+        };
+    </script>
+</body>
+</html>
